@@ -2460,6 +2460,12 @@
     step: 0,
     next: 0,
     file: null,
+    resumeContext() {
+      if (this.ctx)
+        this.ctx.resume().catch((error) => {
+          console.warn("Unable to resume music:", error);
+        });
+    },
     start() {
       if (this.file) {
         this.file.play().catch(() => {});
@@ -2470,12 +2476,13 @@
         return;
       }
       if (this.ctx) {
-        this.ctx.resume();
+        this.resumeContext();
         return;
       }
       const ctx = (this.ctx = new (
         window.AudioContext || window.webkitAudioContext
       )());
+      this.resumeContext();
       const master = ctx.createGain();
       master.gain.setValueAtTime(0, ctx.currentTime);
       master.gain.linearRampToValueAtTime(0.7, ctx.currentTime + 3);
@@ -2529,7 +2536,7 @@
       if (this.file) {
         this.on ? this.file.play().catch(() => {}) : this.file.pause();
       } else if (this.ctx) {
-        this.on ? this.ctx.resume() : this.ctx.suspend();
+        this.on ? this.resumeContext() : this.ctx.suspend();
       } else if (this.on) this.start();
       $("iconMusic").setAttribute("aria-pressed", this.on);
       $("iconMusic").setAttribute(
@@ -2684,7 +2691,7 @@
   document.addEventListener("visibilitychange", () => {
     const hidden = document.hidden;
     if (Music.ctx)
-      hidden ? Music.ctx.suspend() : Music.on && Music.ctx.resume();
+      hidden ? Music.ctx.suspend() : Music.on && Music.resumeContext();
     if (Music.file)
       hidden
         ? Music.file.pause()
